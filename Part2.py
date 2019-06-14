@@ -17,18 +17,16 @@ def ExtractCB(ST, SV, k=20, l=20, T=10, eps=0.01):
     t = 1
     rmse = np.inf
     while t < T or rmse > eps:
-        for user_id in range(users_profiles.shape[0]): #todo: first user is 1 not 0 ?
-            if users_profiles[user_id] is not np.ndarray:
-                continue
-            u[user_id] = get_cluster(user_id, v, B, k, get_user_error)
+        user_ids = np.unique(ST[:, 0], axis=0)
+        for user_id in user_ids:
+            u[int(user_id)] = get_cluster(user_id, v, B, k, get_user_error)
         B = calculate_code_book(k, l, u, v)
-        for item_id in range(items_profiles.shape[0]): #todo: first item is 1 not 0 ?
-            if items_profiles[item_id] is not np.ndarray:
-                continue
-            v[item_id] = get_cluster(item_id, u, B, l, get_item_error)
+        item_ids = np.unique(ST[:, 1], axis=0)
+        for item_id in item_ids:
+            v[int(item_id)] = get_cluster(item_id, u, B, l, get_item_error)
         B = calculate_code_book(k, l, u, v)
         rmse = evaluate(SV, u, v, B)
-        t =t+1
+        t = t + 1
     return u, v, B
 
 
@@ -56,18 +54,18 @@ def calculate_code_book(k, l, u, v):
 def get_user_error(user_id, v, B, user_cluster):
 
     sum = 0
-    for i, item in enumerate(users_profiles[user_id][0]):
-        item_cluster = v[item]
-        rating = users_profiles[1][i]
+    for i, item in enumerate(users_profiles[int(user_id)][0]):
+        item_cluster = v[int(item)]
+        rating = users_profiles[int(user_id)][1][i]
         sum += (rating-B[user_cluster][item_cluster])**2
     return sum
 
 
 def get_item_error(item_id, u, B, item_cluster):
     sum = 0
-    for i, user in enumerate(items_profiles[item_id][0]):
-        user_cluster = u[user]
-        rating = items_profiles[1][i]
+    for i, user in enumerate(items_profiles[int(item_id)][0]):
+        user_cluster = u[int(user)]
+        rating = items_profiles[int(item_id)][1][i]
         sum += (rating - B[user_cluster][item_cluster]) ** 2
     return sum
 
