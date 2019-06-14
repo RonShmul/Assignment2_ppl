@@ -22,9 +22,6 @@ def build_df(ratings_file):
     return profiles, items
 
 
-# ExtractProfiles('ratings.csv', 'outputs', 'outputs')
-
-
 def build_user_profiles(data):
     user_ids = np.unique(data[:, 0], axis=0)
     user_ids = user_ids[~np.isnan(user_ids)]
