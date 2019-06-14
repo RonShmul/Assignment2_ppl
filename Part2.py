@@ -16,7 +16,7 @@ def ExtractCB(ST, SV, k=20, l=20, T=10, eps=0.01):
     B = calculate_code_book(k, l, u, v)
     t = 1
     rmse = np.inf
-    while t < T or rmse > eps:
+    while t < T and rmse > eps:
         user_ids = np.unique(ST[:, 0], axis=0)
         user_ids = user_ids[~np.isnan(user_ids)]
         for user_id in user_ids:
