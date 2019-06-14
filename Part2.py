@@ -18,10 +18,12 @@ def ExtractCB(ST, SV, k=20, l=20, T=10, eps=0.01):
     rmse = np.inf
     while t < T or rmse > eps:
         user_ids = np.unique(ST[:, 0], axis=0)
+        user_ids = user_ids[~np.isnan(user_ids)]
         for user_id in user_ids:
             u[int(user_id)] = get_cluster(user_id, v, B, k, get_user_error)
         B = calculate_code_book(k, l, u, v)
         item_ids = np.unique(ST[:, 1], axis=0)
+        item_ids = item_ids[~np.isnan(item_ids)]
         for item_id in item_ids:
             v[int(item_id)] = get_cluster(item_id, u, B, l, get_item_error)
         B = calculate_code_book(k, l, u, v)
