@@ -50,7 +50,9 @@ def ExtractCB(path_file, k=20, T=10, eps=0.01):
         B = calculate_code_book(k, l, u, v)
         rmse = evaluate(SV, u, v, B)
         t = t + 1
-    write_to_files(u_file, v_file, B_file)
+    pd.DataFrame(u).to_csv('u.csv', header=False)
+    pd.DataFrame(v).to_csv('v.csv', header=False)
+    pd.DataFrame(B[:,1:]).to_csv('B.csv', header=False)
     return u, v, B
 
 
@@ -137,6 +139,9 @@ def predict(SV, u, v, B):
 
 
 def get_recommendations(user_id, ST, n=10):
+    u = np.genfromtxt('u.csv', delimiter=',')
+    v = np.genfromtxt('v.csv', delimiter=',')
+    B = np.genfromtxt('B.csv', delimiter=',')
     rated_items = users_profiles[user_id][0]
     items = np.unique(ST[:, 1], axis=0)
     not_rated_items = [item for item in items if item not in rated_items]
@@ -152,7 +157,7 @@ def get_predictions():
     user_id = data['userid']
     n = data['n']
     ST, SV = create_ST_SV(sys.argv[1])
-    return jsonify(get_recommendations(user_id, n))
+    return jsonify(get_recommendations(user_id, ST, n))
 
 
 if __name__ == '__main__':
