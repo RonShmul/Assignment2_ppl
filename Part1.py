@@ -17,9 +17,9 @@ def build_df(ratings_file):
     df.columns = ['userId', 'movieId', 'rating', 'timestamp']
     df = df.drop(0)
     df = df.drop(['timestamp'], axis=1)
-    profiles = df.groupby('userId').agg(lambda x: list(x))
+    users = df.groupby('userId').agg(lambda x: list(x))
     items = df.groupby('movieId').agg(lambda x: list(x))
-    return profiles, items
+    return users, items
 
 
 def build_user_profiles(data):
@@ -48,13 +48,12 @@ def build_item_profiles(data):
 
 def save_to_csv(profile, file_name, column_names):
     with open(file_name, 'w', newline='') as csv_file:
-        csv_writer = csv.writer(csv_file, delimiter='\t')
+        csv_writer = csv.writer(csv_file, delimiter=',')
         csv_writer.writerow(column_names)
         for index in range(profile.shape[0]):
             if type(profile[index]) is not np.ndarray and profile[index] == 0:
                 continue
             csv_writer.writerow([index, profile[index][0].tolist(), profile[index][1].tolist()])
-
 
 
 ExtractProfiles('ratings.csv', 'outputs', 'outputs')

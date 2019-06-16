@@ -4,7 +4,8 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 
 
-def ExtractCB(ST, SV, k=20, l=20, T=10, eps=0.01):
+def ExtractCB(ST, SV, k=20, T=10, eps=0.01): #todo: add input and output dirs
+    l=k
     global users_profiles
     global items_profiles
     global total_average
@@ -52,7 +53,6 @@ def calculate_code_book(k, l, u, v):
 
 
 def get_user_error(user_id, v, B, user_cluster):
-
     sum = 0
     for i, item in enumerate(users_profiles[int(user_id)][0]):
         item_cluster = v[int(item)]
@@ -108,8 +108,27 @@ def predict(SV, u, v, B):
     return predictions
 
 
-data = np.genfromtxt('ratings.csv', delimiter=',', skip_header=1)
+def get_recommendations(user_id, ST, SV, n=10):
+    u, v, B = ExtractCB(ST, SV, k=5)
+    rated_items = users_profiles[user_id][0]
+    items = np.unique(ST[:, 1], axis=0)
+    not_rated_items = [item for item in items if item not in rated_items]
+    user_cluster = u[int(user_id)]
+    recommendations = np.zeros(163949) #len(not_rated_items)
+    for index, item_id in enumerate(not_rated_items):
+        item_cluster = v[int(item_id)]
+        rating = B[user_cluster][item_cluster]
+        recommendations[int(item_id)] = rating #todo(not int)
+    recommends = recommendations.sort()
+    recommends = recommendations[::-1]
+    recommends = recommendations[:11]
+    return recommendations.sort()[:-(n+1):-1]
+
+
+data = np.genfromtxt('ratings_temp.csv', delimiter=',', skip_header=1)
 
 np.random.shuffle(data)
 ST, SV = train_test_split(data, test_size=0.2, random_state=42)
-ExtractCB(ST, SV)
+#ExtractCB(ST, SV, k=10)
+recommendations = get_recommendations(1, ST, SV)
+print(recommendations)
