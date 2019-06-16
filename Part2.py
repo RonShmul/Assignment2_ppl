@@ -2,13 +2,35 @@ import Part1
 import numpy as np
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
+import pandas as pd
+from flask import Flask, jsonify, request, current_app
+import sys
 
 
-def ExtractCB(ST, SV, k=20, T=10, eps=0.01): #todo: add input and output dirs
+app = Flask(__name__)
+
+global u
+global v
+global B
+
+
+def create_ST_SV(path_file):
+    data = np.genfromtxt(path_file, delimiter=',', skip_header=1)
+
+    np.random.shuffle(data)
+    ST, SV = train_test_split(data, test_size=0.2, random_state=42)
+    return ST, SV
+
+
+def ExtractCB(path_file, k=20, T=10, eps=0.01):
+    ST, SV = create_ST_SV(path_file)
     l=k
     global users_profiles
     global items_profiles
     global total_average
+    global u
+    global v
+    global B
     users_profiles = Part1.build_user_profiles(ST)
     items_profiles = Part1.build_item_profiles(ST)
     total_average = np.mean(ST[:, 2])
@@ -28,6 +50,7 @@ def ExtractCB(ST, SV, k=20, T=10, eps=0.01): #todo: add input and output dirs
         B = calculate_code_book(k, l, u, v)
         rmse = evaluate(SV, u, v, B)
         t = t + 1
+    write_to_files(u_file, v_file, B_file)
     return u, v, B
 
 
@@ -102,33 +125,40 @@ def evaluate(SV, u, v, B):
 def predict(SV, u, v, B):
     predictions = []
     for index in range(SV.shape[0]):
-        user_cluster = u[int(SV[index, 0])]
-        item_cluster = v[int(SV[index, 1])]
-        predictions.append(B[user_cluster, item_cluster])
+        try:
+            user_cluster = u[int(SV[index, 0])]
+            item_cluster = v[int(SV[index, 1])]
+            predictions.append(B[user_cluster, item_cluster])
+        except KeyError:
+            predictions.append(total_average)
+        except IndexError:
+            predictions.append(total_average)
     return predictions
 
 
-def get_recommendations(user_id, ST, SV, n=10):
-    u, v, B = ExtractCB(ST, SV, k=5)
+def get_recommendations(user_id, ST, n=10):
     rated_items = users_profiles[user_id][0]
     items = np.unique(ST[:, 1], axis=0)
     not_rated_items = [item for item in items if item not in rated_items]
+    recommendations = pd.DataFrame(data=not_rated_items, columns=['items'])
     user_cluster = u[int(user_id)]
-    recommendations = np.zeros(163949) #len(not_rated_items)
-    for index, item_id in enumerate(not_rated_items):
-        item_cluster = v[int(item_id)]
-        rating = B[user_cluster][item_cluster]
-        recommendations[int(item_id)] = rating #todo(not int)
-    recommends = recommendations.sort()
-    recommends = recommendations[::-1]
-    recommends = recommendations[:11]
-    return recommendations.sort()[:-(n+1):-1]
+    recommendations['ratings'] = recommendations['items'].apply(lambda item_id: B[user_cluster][v[int(item_id)]])
+    return recommendations.sort_values(by=['ratings'], ascending=False).iloc[0:n, 0].tolist()
 
 
-data = np.genfromtxt('ratings_temp.csv', delimiter=',', skip_header=1)
+@app.route('/', methods=['POST'])
+def get_predictions():
+    data = request.form
+    user_id = data['userid']
+    n = data['n']
+    ST, SV = create_ST_SV(sys.argv[1])
+    return jsonify(get_recommendations(user_id, n))
 
-np.random.shuffle(data)
-ST, SV = train_test_split(data, test_size=0.2, random_state=42)
-#ExtractCB(ST, SV, k=10)
-recommendations = get_recommendations(1, ST, SV)
-print(recommendations)
+
+if __name__ == '__main__':
+    print('start train')
+    ExtractCB(sys.argv[1], k=10)
+    print('done train')
+    with app.app_context():
+        print(current_app.name)
+    app.run()
